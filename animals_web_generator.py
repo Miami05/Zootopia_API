@@ -27,6 +27,7 @@ def fetch_animals(name: str):
         print(f"Error {resp.status_code}: {resp.text}")
         return []
 
+
 def add_row(rows, label, value):
     """Append a formatted row to rows if value is truthy."""
     if value:
@@ -34,6 +35,7 @@ def add_row(rows, label, value):
             f"<div><strong>{html.escape(str(label))}:</strong> "
             f"{html.escape(str(value))}</div>"
         )
+
 
 def render_items(animal):
     """Render a single animal card HTML block."""
@@ -66,17 +68,22 @@ def render_items(animal):
   </div>
 </li>""".strip()
 
+def render_empty(query: str) -> str:
+    """Render the 'doesn't exist' message as a card."""
+    q = html.escape(query)
+    return f"""
+<li class="cards__item error">
+  <h2>The animal "{q}" doesn't exist.</h2>
+  <p class="card__text">Try another name (e.g., Fox, Monkey).</p>
+</li>""".strip()
+
+
 def build_page(query, animals, template_path):
-    items_list = []
-    for animal in (animals or []):
-        items_list.append(render_items(animal))
-    if not items_list:
-      items_list.append(
-          f'<li class="cards__item"><div class="card__text">'
-          f'No results for "{html.escape(str(query))}".'
-          f'</div></li>'
-      )
-    items = "\n".join(items_list)
+    """Fill the HTML template with cards for all returned animals, or a nice message."""
+    items = (
+        "\n".join(render_item(a) for a in animals)
+        if animals else render_empty(query)
+    )
     if template_path.exists():
         template = template_path.read_text(encoding="utf-8")
         return template.replace("__REPLACE_ANIMALS_INFO__", items)
@@ -89,6 +96,7 @@ def build_page(query, animals, template_path):
 def save_to_file(content, file_path):
     file_path.write_text(content, encoding="utf-8")
 
+
 def main():
     animal_name = input("Enter a name of an animal: ").strip()
     if not animal_name:
@@ -98,6 +106,7 @@ def main():
     html_out = build_page(animal_name, animals, Path("animals_template.html"))
     save_to_file(html_out, Path(OUTPUT_FILE))
     print(f"Website was successfully generated to the file {OUTPUT_FILE}")
+
 
 if __name__ == "__main__":
     main()
