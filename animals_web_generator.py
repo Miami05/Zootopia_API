@@ -3,30 +3,9 @@ import json
 from pathlib import Path
 import html
 import sys
+import data_fetcher
 
-API_KEY = "m76+OfPfOQNYc6KOtBb9qA==HpZ45W5exHYGnCPK"
-URL = "https://api.api-ninjas.com/v1/animals"
 OUTPUT_FILE = 'animals.html'
-
-def fetch_animals(name: str):
-    """Call the API Ninjas Animals endpoint and return a list of animals."""
-    headers = {"X-Api-Key": API_KEY}
-    try:
-        resp = requests.get(URL, headers=headers, params={"name": name}, timeout=15)
-    except requests.RequestException as e:
-        print(f"Network error: {e}")
-        return []
-
-    if resp.ok:
-        try:
-            return resp.json() or []
-        except ValueError:
-            print("Error: API returned non-JSON response.")
-            return []
-    else:
-        print(f"Error {resp.status_code}: {resp.text}")
-        return []
-
 
 def add_row(rows, label, value):
     """Append a formatted row to rows if value is truthy."""
@@ -35,7 +14,6 @@ def add_row(rows, label, value):
             f"<div><strong>{html.escape(str(label))}:</strong> "
             f"{html.escape(str(value))}</div>"
         )
-
 
 def render_items(animal):
     """Render a single animal card HTML block."""
@@ -68,6 +46,7 @@ def render_items(animal):
   </div>
 </li>""".strip()
 
+
 def render_empty(query: str) -> str:
     """Render the 'doesn't exist' message as a card."""
     q = html.escape(query)
@@ -81,7 +60,7 @@ def render_empty(query: str) -> str:
 def build_page(query, animals, template_path):
     """Fill the HTML template with cards for all returned animals, or a nice message."""
     items = (
-        "\n".join(render_item(a) for a in animals)
+        "\n".join(render_items(a) for a in animals)
         if animals else render_empty(query)
     )
     if template_path.exists():
@@ -102,7 +81,7 @@ def main():
     if not animal_name:
         print("No animal name provided. Exiting.")
         sys.exit(1)
-    animals = fetch_animals(animal_name)
+    animals = data_fetcher.fetch_data(animal_name)
     html_out = build_page(animal_name, animals, Path("animals_template.html"))
     save_to_file(html_out, Path(OUTPUT_FILE))
     print(f"Website was successfully generated to the file {OUTPUT_FILE}")
